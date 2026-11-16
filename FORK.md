@@ -28,4 +28,4 @@ gh workflow run conda.yaml -f tag=v<version>-conda.<number>
 
 The run builds and tests the package, then publishes it as the release with the package as its only asset, and prints its URL and sha256. tt-vllm-tracer pins both in `pyproject.toml`.
 
-Upstream's own workflows are disabled in this fork; `conda.yaml` is its only CI.
+Upstream's own workflows are disabled in this fork, and `conda.yaml` is its only CI. Each would repeat a guarantee that holds elsewhere: `Build & Test - Ubuntu` builds and unit-tests the same C++ that upstream's CI tests on each commit, and the conda build compiles it again and models a workload; `spdx-license-check` checks upstream's headers, which upstream checks, and an unpinned third-party action; community labeling serves upstream's issue tracker. The fork's own files carry SPDX headers, so re-enabling the check after a merge from upstream still passes.

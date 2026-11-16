@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 set -euxo pipefail
 
 # tt-npe compiles with -stdlib=libc++, whose headers are in the host prefix,
