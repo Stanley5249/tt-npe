@@ -1,0 +1,74 @@
+# Builds and tests the tt-npe conda package from conda/ on pushes to main and
+# on PRs. A manual run with a tag also publishes the package as that GitHub
+# release; FORK.md says how to pick the tag.
+name: conda
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release to publish, such as v2026.10.8-conda.1; empty only builds"
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: conda-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          pixi-version: v0.84.2
+          run-install: false
+      # The recipe's tests import the binding and model a sample workload.
+      - name: build
+        run: |
+          pixi exec -s rattler-build==0.80.1 -- rattler-build build \
+            --recipe conda/recipe.yaml --variant-config conda/variants.yaml --output-dir dist
+          sha256sum dist/linux-64/*.conda
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conda
+          path: dist/linux-64/*.conda
+          if-no-files-found: error
+
+  publish:
+    if: inputs.tag
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: conda
+          path: dist
+      # vVERSION-conda.N must name the recipe's version and build number.
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          version=${TAG#v}
+          version=${version%-conda.*}
+          number=${TAG##*-conda.}
+          package=$(ls dist/tt-npe-"$version"-*_"$number".conda)
+          gh release create "$TAG" "$package" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "$TAG" \
+            --notes "tt-npe at $GITHUB_SHA as a conda package for linux-64. Pin it by URL and the sha256 below."
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[] | "\(.url) \(.digest)"'

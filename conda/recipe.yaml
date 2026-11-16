@@ -1,0 +1,58 @@
+# Builds this checkout of tt-npe as one conda package: the model library, its
+# Python binding, the analysis scripts as importable modules, and the device
+# models, with an activation script that points tt-npe at them.
+# FORK.md says how to update and release it.
+context:
+  # The upstream commit's date; FORK.md says how to bump it.
+  version: "2026.10.8"
+
+package:
+  name: tt-npe
+  version: ${{ version }}
+
+source:
+  path: ../
+
+build:
+  number: 1
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - lld
+    - cmake >=3.20
+    - ninja
+    # CPM fetches tt-npe's C++ dependencies with git at configure time.
+    - git
+  host:
+    - python
+    - libcxx-devel ${{ cxx_compiler_version }}.*
+  run:
+    - python
+    - libcxx >=${{ cxx_compiler_version }}
+    # What tt-npe's scripts and timeline files need.
+    - orjson
+    - zstandard
+
+tests:
+  - python:
+      imports:
+        - tt_npe_pybind
+        - npe_analyze_noc_trace_dir
+        - fabric_post_process
+      pip_check: false
+  - files:
+      source:
+        - tt_npe/workload/example_wl.json
+    script:
+      - test -f "${TT_NPE_DEVICE_MODEL_CONFIG_DIR}wormhole_b0.yaml"
+      - python -m tt_npe -w tt_npe/workload/example_wl.json -d wormhole_b0
+
+about:
+  homepage: https://github.com/tenstorrent/tt-npe
+  repository: https://github.com/Stanley5249/tt-npe
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Tenstorrent NoC performance estimator, packaged by the Stanley5249 fork
