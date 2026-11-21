@@ -10,7 +10,7 @@ This fork packages upstream [tenstorrent/tt-npe](https://github.com/tenstorrent/
 - `tt_npe_pybind` and upstream's `tt_npe.py`, `npe_analyze_noc_trace_dir.py`, and `fabric_post_process.py` as importable modules in `site-packages`, so no `PYTHONPATH` is needed;
 - the device models in `share/tt_npe/device/models/`, and an activation script that sets `TT_NPE_DEVICE_MODEL_CONFIG_DIR` to them.
 
-The recipe's tests import the modules and model upstream's sample workload. The bundled `libfmt` and `libsimdjson` clash with conda-forge's packages of the same libraries, so keep tt-npe in an environment of its own.
+The recipe's tests import the modules and model upstream's sample workload. The bundled `libfmt` and `libsimdjson` clash with conda-forge's packages of the same libraries, so an environment that also installs those, or loads them into one process with tt-npe, should keep tt-npe apart; tt-scope's runtime environment loads neither and shares it.
 
 ## Releases
 
@@ -23,9 +23,9 @@ git fetch https://github.com/tenstorrent/tt-npe.git main
 git merge FETCH_HEAD          # upstream never touches conda/, so this merges cleanly
 # set version in conda/recipe.yaml to the commit's date and build.number to 1
 git push
-gh workflow run conda.yaml -f tag=v<version>-conda.<number>
+gh workflow run conda.yaml -f publish=true
 ```
 
-The run builds and tests the package, then publishes it as the release with the package as its only asset, and prints its URL and sha256. `conda.yaml` installs the latest pixi, runs rattler-build 0.80 with `pixi exec`, and follows each action's version tag, as tt-scope's [versions in CI](https://github.com/Stanley5249/tt-scope/blob/main/docs/architecture.md#versions-in-ci) describes. tt-scope pins the release's URL and sha256 in `pyproject.toml`.
+The run builds and tests the package, then publishes it as the release `v<version>-conda.<number>`, from the recipe's version and build number, with the package as its only asset, and prints its URL and sha256. `conda.yaml` installs the latest pixi, runs rattler-build 0.80 with `pixi exec`, and follows each action's version tag, as tt-scope's [versions in CI](https://github.com/Stanley5249/tt-scope/blob/main/docs/architecture.md#versions-in-ci) describes. tt-scope pins the release's URL and sha256 in `pyproject.toml`.
 
 Upstream's own workflows are disabled in this fork, and `conda.yaml` is its only CI. Each would repeat a guarantee that holds elsewhere: `Build & Test - Ubuntu` builds and unit-tests the same C++ that upstream's CI tests on each commit, and the conda build compiles it again and models a workload; `spdx-license-check` checks upstream's headers, which upstream checks, and an unpinned third-party action; community labeling serves upstream's issue tracker. The fork's own files carry SPDX headers, so re-enabling the check after a merge from upstream still passes.

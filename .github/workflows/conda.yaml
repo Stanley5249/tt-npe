@@ -1,6 +1,6 @@
 # Builds and tests the tt-npe conda package from conda/ on pushes to main and
-# on PRs. A manual run with a tag also publishes the package as that GitHub
-# release; FORK.md says how to pick the tag.
+# on PRs. A manual run with publish set also publishes the package as the
+# release vVERSION-conda.N, from the recipe's version and build number.
 name: conda
 
 on:
@@ -9,9 +9,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Release to publish, such as v2026.10.8-conda.1; empty only builds"
-        required: false
+      publish:
+        description: "Publish the built package as its release"
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -45,7 +46,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: inputs.tag
+    if: inputs.publish
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -56,16 +57,17 @@ jobs:
         with:
           name: conda
           path: dist
-      # vVERSION-conda.N must name the recipe's version and build number.
+      # The package is tt-npe-VERSION-HASH_N.conda, from the recipe's version
+      # and build number.
       - name: publish
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
         run: |
-          version=${TAG#v}
-          version=${version%-conda.*}
-          number=${TAG##*-conda.}
-          package=$(ls dist/tt-npe-"$version"-*_"$number".conda)
+          package=$(ls dist/tt-npe-*.conda)
+          name=${package##*/tt-npe-}
+          version=${name%%-*}
+          number=${name##*_}
+          TAG="v$version-conda.${number%.conda}"
           gh release create "$TAG" "$package" --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --title "$TAG" \
             --notes "tt-npe at $GITHUB_SHA as a conda package for linux-64. Pin it by URL and the sha256 below."
