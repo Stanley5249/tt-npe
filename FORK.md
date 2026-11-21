@@ -1,6 +1,6 @@
 # Stanley5249/tt-npe
 
-This fork packages upstream [tenstorrent/tt-npe](https://github.com/tenstorrent/tt-npe), the Tenstorrent NoC performance estimator, as one conda package for linux-64, so [tt-vllm-tracer](https://github.com/Stanley5249/tt-vllm-tracer) can install it with pixi instead of cloning and building it. The source is upstream's; the fork adds only `conda/`, `.github/workflows/conda.yaml`, and this file.
+This fork packages upstream [tenstorrent/tt-npe](https://github.com/tenstorrent/tt-npe), the Tenstorrent NoC performance estimator, as one conda package for linux-64, so [tt-scope](https://github.com/Stanley5249/tt-scope) can install it with pixi instead of cloning and building it. The source is upstream's; the fork adds only `conda/`, `.github/workflows/conda.yaml`, and this file.
 
 ## What the package holds
 
@@ -26,6 +26,6 @@ git push
 gh workflow run conda.yaml -f tag=v<version>-conda.<number>
 ```
 
-The run builds and tests the package, then publishes it as the release with the package as its only asset, and prints its URL and sha256. `conda.yaml` pins pixi in `pixi-version`, rattler-build to an exact version, and each action to a full commit SHA, following tt-scope's [versions in CI](https://github.com/Stanley5249/tt-scope/blob/main/docs/architecture.md#versions-in-ci); change them on purpose, in one commit, and check that the build still passes. tt-vllm-tracer pins both in `pyproject.toml`.
+The run builds and tests the package, then publishes it as the release with the package as its only asset, and prints its URL and sha256. `conda.yaml` installs the latest pixi, runs rattler-build 0.80 with `pixi exec`, and follows each action's version tag, as tt-scope's [versions in CI](https://github.com/Stanley5249/tt-scope/blob/main/docs/architecture.md#versions-in-ci) describes. tt-scope pins the release's URL and sha256 in `pyproject.toml`.
 
 Upstream's own workflows are disabled in this fork, and `conda.yaml` is its only CI. Each would repeat a guarantee that holds elsewhere: `Build & Test - Ubuntu` builds and unit-tests the same C++ that upstream's CI tests on each commit, and the conda build compiles it again and models a workload; `spdx-license-check` checks upstream's headers, which upstream checks, and an unpinned third-party action; community labeling serves upstream's issue tracker. The fork's own files carry SPDX headers, so re-enabling the check after a merge from upstream still passes.

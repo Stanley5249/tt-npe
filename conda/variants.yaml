@@ -1,5 +1,5 @@
 # tt-npe builds with Clang and libc++ by default. The sysroot keeps the binary
-# loadable on glibc 2.34, which tt-vllm-tracer requires.
+# loadable on glibc 2.34, which tt-scope requires.
 cxx_compiler:
   - clangxx
 cxx_compiler_version:
